@@ -4,14 +4,18 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <ImplicitUsings>enable</ImplicitUsings>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        
         <PackageId>80x0.pine</PackageId>
+        <Title>Pine</Title>
         <Version>1.0.1</Version>
         <Authors>80x0</Authors>
         <Description>A modern, feature-rich logging library for .NET</Description>
         <PackageTags>logging;logger;console;file;json</PackageTags>
-        <RepositoryUrl>https://github.com/int80x0/pine</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/int80x0/Pine</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/int80x0/Pine</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <Copyright>Copyright © 2025</Copyright>
     </PropertyGroup>
 
 </Project>
