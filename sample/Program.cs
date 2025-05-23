@@ -33,7 +33,7 @@ public class Program
             ["Username"] = "john_doe"
         });
 
-        await logger.InfoAsync("Async logging works too!");
+        await logger.InfoAsync("Async logging works too!!");
 
         logger.Dispose();
     }
