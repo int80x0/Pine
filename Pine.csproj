@@ -6,8 +6,8 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <PackageId>Pine.Logger</PackageId>
-        <Version>1.0.0</Version>
+        <PackageId>80x0.pine</PackageId>
+        <Version>1.0.$([System.DateTime]::Now.ToString('yyyyMMdd'))</Version>
         <Authors>80x0</Authors>
         <Description>A modern, feature-rich logging library for .NET</Description>
         <PackageTags>logging;logger;console;file;json</PackageTags>
