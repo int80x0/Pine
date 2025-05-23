@@ -16,7 +16,6 @@
         <RepositoryUrl>https://github.com/int80x0/Pine</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <Copyright>Copyright © 2025</Copyright>
-        <PackageIconUrl>https://example.com/icon.png</PackageIconUrl> -->
     </PropertyGroup>
 
 </Project>
