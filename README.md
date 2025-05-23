@@ -22,7 +22,7 @@ A modern, high-performance logging library for .NET that combines simplicity wit
 ### Installation
 
 ```bash
-dotnet add package Pine
+dotnet add package 80x0.pine
 ```
 
 ### Basic Usage
