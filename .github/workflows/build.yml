@@ -20,24 +20,24 @@ jobs:
         dotnet-version: '9.0.x'
         
     - name: Restore dependencies
-      run: dotnet restore src/Pine/Pine.csproj
+      run: dotnet restore Pine.csproj
       
     - name: Build project
-      run: dotnet build src/Pine/Pine.csproj --configuration Release --no-restore
+      run: dotnet build Pine.csproj --configuration Release --no-restore
       
     - name: Run tests (if any)
       run: dotnet test --no-build --configuration Release --verbosity normal
       continue-on-error: true
       
     - name: Pack NuGet package
-      run: dotnet pack src/Pine/Pine.csproj --configuration Release --no-build --output ./artifacts
+      run: dotnet pack Pine.csproj --configuration Release --no-build --output ./artifacts
       
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: pine-build-${{ github.run_number }}
         path: |
-          src/Pine/bin/Release/
+          bin/Release/
           ./artifacts/
         retention-days: 30
         
@@ -53,15 +53,15 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '9.0.x'
         
     - name: Restore and build
       run: |
-        dotnet restore src/Pine/Pine.csproj
-        dotnet build src/Pine/Pine.csproj --configuration Release --no-restore
+        dotnet restore Pine.csproj
+        dotnet build Pine.csproj --configuration Release --no-restore
         
     - name: Create NuGet package
-      run: dotnet pack src/Pine/Pine.csproj --configuration Release --no-build --output ./nupkg
+      run: dotnet pack Pine.csproj --configuration Release --no-build --output ./nupkg
       
     - name: Publish to NuGet (if token available)
       run: |
@@ -84,20 +84,20 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '9.0.x'
         
     - name: Build and pack
       run: |
-        dotnet restore src/Pine/Pine.csproj
-        dotnet build src/Pine/Pine.csproj --configuration Release --no-restore
-        dotnet pack src/Pine/Pine.csproj --configuration Release --no-build --output ./release
+        dotnet restore Pine.csproj
+        dotnet build Pine.csproj --configuration Release --no-restore
+        dotnet pack Pine.csproj --configuration Release --no-build --output ./release
         
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
         files: |
           ./release/*.nupkg
-          src/Pine/bin/Release/net8.0/*.dll
+          bin/Release/net9.0/*.dll
         body: |
           ## Pine Logger v${{ github.ref_name }}
           
@@ -105,7 +105,7 @@ jobs:
           
           ### Changes in this release:
           - Automatic build from commit ${{ github.sha }}
-          - Built with .NET 8.0
+          - Built with .NET 9.0
           
           ### Installation:
           ```bash
