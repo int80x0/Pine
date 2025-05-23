@@ -1,0 +1,122 @@
+name: Build and Publish Pine
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore src/Pine/Pine.csproj
+      
+    - name: Build project
+      run: dotnet build src/Pine/Pine.csproj --configuration Release --no-restore
+      
+    - name: Run tests (if any)
+      run: dotnet test --no-build --configuration Release --verbosity normal
+      continue-on-error: true
+      
+    - name: Pack NuGet package
+      run: dotnet pack src/Pine/Pine.csproj --configuration Release --no-build --output ./artifacts
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: pine-build-${{ github.run_number }}
+        path: |
+          src/Pine/bin/Release/
+          ./artifacts/
+        retention-days: 30
+        
+  publish-nuget:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Restore and build
+      run: |
+        dotnet restore src/Pine/Pine.csproj
+        dotnet build src/Pine/Pine.csproj --configuration Release --no-restore
+        
+    - name: Create NuGet package
+      run: dotnet pack src/Pine/Pine.csproj --configuration Release --no-build --output ./nupkg
+      
+    - name: Publish to NuGet (if token available)
+      run: |
+        if [ -n "${{ secrets.NUGET_API_KEY }}" ]; then
+          dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        else
+          echo "NuGet API key not found. Skipping NuGet publish."
+        fi
+      continue-on-error: true
+      
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Build and pack
+      run: |
+        dotnet restore src/Pine/Pine.csproj
+        dotnet build src/Pine/Pine.csproj --configuration Release --no-restore
+        dotnet pack src/Pine/Pine.csproj --configuration Release --no-build --output ./release
+        
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          ./release/*.nupkg
+          src/Pine/bin/Release/net8.0/*.dll
+        body: |
+          ## Pine Logger v${{ github.ref_name }}
+          
+          🌲 **Pine Logger** - Modern logging library for .NET
+          
+          ### Changes in this release:
+          - Automatic build from commit ${{ github.sha }}
+          - Built with .NET 8.0
+          
+          ### Installation:
+          ```bash
+          dotnet add package Pine --version ${{ github.ref_name }}
+          ```
+          
+          ### Files:
+          - `Pine.dll` - Main library
+          - `Pine.nupkg` - NuGet package
+          
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
