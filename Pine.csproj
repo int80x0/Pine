@@ -7,7 +7,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageId>80x0.pine</PackageId>
-        <Version>1.0.$([System.DateTime]::Now.ToString('yyyyMMdd'))</Version>
+        <Version>1.0.1</Version>
         <Authors>80x0</Authors>
         <Description>A modern, feature-rich logging library for .NET</Description>
         <PackageTags>logging;logger;console;file;json</PackageTags>
