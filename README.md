@@ -15,7 +15,7 @@ A modern, high-performance logging library for .NET that combines simplicity wit
 - **🔧 Flexible Configuration** - Fluent API for easy setup
 - **📊 Structured Logging** - JSON format support with custom properties
 - **🏷️ Categorized Logging** - Organize logs by category/component
-- **🚀 Modern C#** - Leverages latest .NET 8 features
+- **🚀 Modern C#** - Leverages latest .NET 9 features
 
 ## 🚀 Quick Start
 
@@ -55,7 +55,7 @@ logger.Info("User action", new Dictionary<string, object>
     ["UserId"] = 123,
     ["Action"] = "Login",
     ["Timestamp"] = DateTime.Now,
-    ["IP"] = "192.168.1.1"
+    ["IP"] = "192.16.1.1"
 });
 ```
 
