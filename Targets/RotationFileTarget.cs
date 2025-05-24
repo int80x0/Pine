@@ -47,25 +47,32 @@ public class RotatingFileTarget : ILogTarget
 
     private async void FlushQueue(object? state)
     {
-        if (_queue.IsEmpty) return;
-
-        await _semaphore.WaitAsync();
         try
         {
-            var messages = new List<string>();
-            while (_queue.TryDequeue(out var message))
-            {
-                messages.Add(message);
-            }
+            if (_queue.IsEmpty) return;
 
-            if (messages.Count > 0)
+            await _semaphore.WaitAsync();
+            try
             {
-                await WriteMessages(messages);
+                var messages = new List<string>();
+                while (_queue.TryDequeue(out var message))
+                {
+                    messages.Add(message);
+                }
+
+                if (messages.Count > 0)
+                {
+                    await WriteMessages(messages);
+                }
+            }
+            finally
+            {
+                _semaphore.Release();
             }
         }
-        finally
-        {
-            _semaphore.Release();
+        catch (Exception e)
+        { 
+            // TODO handle exception
         }
     }
 
@@ -105,11 +112,11 @@ public class RotatingFileTarget : ILogTarget
 
         _currentFilePath = _baseFilePath;
         _currentFileSize = 0;
-        
-        await CleanupOldFiles();
+
+        CleanupOldFiles();
     }
 
-    private async Task CompressFile(string filePath)
+    private static async Task CompressFile(string filePath)
     {
         try
         {
@@ -129,7 +136,7 @@ public class RotatingFileTarget : ILogTarget
         }
     }
 
-    private async Task CleanupOldFiles()
+    private void CleanupOldFiles()
     {
         try
         {
