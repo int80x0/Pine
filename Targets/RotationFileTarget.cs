@@ -70,9 +70,9 @@ public class RotatingFileTarget : ILogTarget
                 _semaphore.Release();
             }
         }
-        catch (Exception e)
+        catch
         { 
-            // TODO handle exception
+            // ignore
         }
     }
 
@@ -130,7 +130,7 @@ public class RotatingFileTarget : ILogTarget
             
             File.Delete(filePath);
         }
-        catch (Exception)
+        catch
         {
             // If compression fails, keep the original file
         }

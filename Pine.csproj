@@ -8,7 +8,7 @@
         
         <PackageId>80x0.pine</PackageId>
         <Title>Pine</Title>
-        <Version>2.0.1</Version>
+        <Version>2.0.2</Version>
         <Authors>80x0</Authors>
         <Description>A modern, feature-rich logging library for .NET</Description>
         <PackageTags>logging;logger;console;file;json</PackageTags>
