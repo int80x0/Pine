@@ -350,7 +350,7 @@ var logger = PineLogger.Create()
     .Build();
 ```
 
-## 🌟 What's New in v1.1
+## 🌟 What's New in v2.0.2
 
 - ⚡ **Hot-path optimization** - Zero allocations for disabled log levels
 - 🔄 **Log rotation** - Automatic file rotation with compression
