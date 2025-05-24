@@ -9,13 +9,15 @@ A modern, high-performance logging library for .NET that combines simplicity wit
 ## ✨ Features
 
 - **🎨 Colorized Console Output** - Beautiful, color-coded log levels
-- **📁 Multiple Targets** - Console, File, JSON file support
-- **⚡ High Performance** - Async logging with batched file writes
+- **📁 Multiple Targets** - Console, File, JSON file support with rotation
+- **🔄 Log Rotation** - Automatic file rotation by size with compression
+- **⚡ High Performance** - Hot-path optimization and async logging
 - **🧵 Thread Safe** - Built for concurrent applications
-- **🔧 Flexible Configuration** - Fluent API for easy setup
+- **🔧 Flexible Configuration** - Fluent API with environment-specific settings
 - **📊 Structured Logging** - JSON format support with custom properties
 - **🏷️ Categorized Logging** - Organize logs by category/component
-- **🚀 Modern C#** - Leverages latest .NET 9 features
+- **🌐 Environment Aware** - Different targets for Development/Production
+- **🚀 Modern C#** - Leverages latest .NET 9 features with template-based logging
 
 ## 🚀 Quick Start
 
@@ -30,57 +32,106 @@ dotnet add package 80x0.pine
 ```csharp
 using Pine;
 
-// Create logger with fluent configuration
+// Create logger with environment-specific configuration
 var logger = PineLogger.Create()
     .MinimumLevel(LogLevel.Info)
-    .WriteToConsole()
-    .WriteToFile("logs/app.log")
+    .WriteToConsoleInDevelopment()           // Only in Development
+    .WriteToRotatingFileInProduction("logs/app.log")  // Only in Production
     .Build();
 
-// Log messages
-logger.Info("Application started");
-logger.Warning("Something might be wrong");
-logger.Error("An error occurred", exception);
+// High-performance template-based logging
+logger.Info("User {UserId} performed {Action}", 123, "Login");
+logger.Error("Failed to process order {OrderId}", orderId, exception);
 
 // Cleanup
 logger.Dispose();
 ```
 
-### Structured Logging
-
-```csharp
-// With custom properties
-logger.Info("User action", new Dictionary<string, object>
-{
-    ["UserId"] = 123,
-    ["Action"] = "Login",
-    ["Timestamp"] = DateTime.Now,
-    ["IP"] = "192.16.1.1"
-});
-```
-
-### Advanced Configuration
+### Environment-Specific Configuration
 
 ```csharp
 var logger = PineLogger.Create()
     .MinimumLevel(LogLevel.Debug)
-    .WriteToConsole()                    // Colorized console output
-    .WriteToFile("logs/app.log")         // Plain text file
-    .WriteToJsonFile("logs/data.json")   // Structured JSON
+    .WriteToConsole().OnlyInDevelopment()
+    .WriteToRotatingFile("logs/app.log", maxFileSize: 100_000_000, maxFiles: 7, compress: true).OnlyInProduction()
+    .WriteToRotatingJsonFile("logs/structured.json").OnlyInEnvironment("Staging")
     .WithDefaultCategory("MyApp")
     .Build();
+```
 
-// Category-specific logger
-var dbLogger = logger.ForCategory("Database");
-dbLogger.Debug("Connection opened");
+## ⚡ Performance Features
 
-// Async logging
-await logger.InfoAsync("Async operation completed");
+Pine is optimized for maximum performance:
+
+### Hot-Path Optimization
+```csharp
+// These calls are optimized - no string formatting if level is disabled
+logger.Debug("Processing {ItemId} for {UserId}", itemId, userId);  // ✅ Fast
+logger.Debug($"Processing {itemId} for {userId}");                 // ❌ Always allocates
+```
+
+### Template-Based Logging
+```csharp
+// Optimized overloads for common scenarios
+logger.Info("User {UserId} action {Action}", 123, "Login");
+logger.Error("Failed {Operation} for {Resource}", "Save", "Order", exception);
+
+// Traditional logging still supported
+logger.Info("Traditional message", new Dictionary<string, object> { ["Key"] = "Value" });
+```
+
+## 📊 Log Rotation
+
+### File Rotation by Size
+```csharp
+.WriteToRotatingFile("logs/app.log", 
+    maxFileSize: 50 * 1024 * 1024,  // 50MB
+    maxFiles: 10,                   // Keep 10 files
+    compress: true)                 // Compress old files with gzip
+```
+
+### JSON File Rotation
+```csharp
+.WriteToRotatingJsonFile("logs/structured.json", 
+    maxFileSize: 25 * 1024 * 1024, 
+    maxFiles: 5)
+```
+
+Files are rotated with timestamps: `app.20241215-143022.log.gz`
+
+## 🌐 Environment-Aware Logging
+
+Pine automatically detects your environment using `DOTNET_ENVIRONMENT` or `ASPNETCORE_ENVIRONMENT`:
+
+### Conditional Targets
+```csharp
+// Method 1: Fluent conditions
+.WriteToConsole().OnlyInDevelopment()
+.WriteToFile("logs/prod.log").OnlyInProduction()
+.WriteToRotatingFile("logs/staging.log").OnlyInStaging()
+
+// Method 2: Convenience methods
+.WriteToConsoleInDevelopment()
+.WriteToRotatingFileInProduction("logs/app.log")
+
+// Method 3: Custom conditions
+.WriteToFile("logs/special.log").OnlyWhen(() => Environment.MachineName == "PROD-SERVER")
+```
+
+### Environment Detection
+```csharp
+// Set environment variables:
+// DOTNET_ENVIRONMENT=Development
+// ASPNETCORE_ENVIRONMENT=Production
+
+EnvironmentHelper.IsDevelopment();  // true/false
+EnvironmentHelper.IsProduction();   // true/false  
+EnvironmentHelper.GetEnvironment(); // "Development", "Production", etc.
 ```
 
 ## 📊 Log Levels
 
-Pine supports 6 log levels with distinct colors:
+Pine supports 6 log levels with distinct colors and hot-path optimization:
 
 | Level   | Color   | Description                              |
 |---------|---------|------------------------------------------|
@@ -95,19 +146,72 @@ Pine supports 6 log levels with distinct colors:
 
 ### Console Target
 ```csharp
-.WriteToConsole()              // Default formatter with colors
-.WriteToConsole(myFormatter)   // Custom formatter
+.WriteToConsole()                    // Default formatter with colors
+.WriteToConsole(myFormatter)         // Custom formatter
+.WriteToConsoleInDevelopment()       // Only in Development
 ```
 
-### File Target
+### File Targets
 ```csharp
-.WriteToFile("logs/app.log")           // Plain text with batched writes
-.WriteToFile("logs/app.log", formatter) // With custom formatter
+// Basic file logging
+.WriteToFile("logs/app.log") 
+
+// Rotating file with compression
+.WriteToRotatingFile("logs/app.log", 
+    maxFileSize: 100_000_000,        // 100MB
+    maxFiles: 7,                     // Keep 7 files
+    compress: true)                  // Gzip compression
+
+// Production-only rotating files
+.WriteToRotatingFileInProduction("logs/prod.log", 
+    maxFileSize: 500_000_000, maxFiles: 30, compress: true)
 ```
 
-### JSON File Target
+### JSON File Targets
 ```csharp
-.WriteToJsonFile("logs/app.json")  // Structured JSON format
+.WriteToJsonFile("logs/app.json")           // Basic JSON logging
+.WriteToRotatingJsonFile("logs/app.json",   // Rotating JSON logs
+    maxFileSize: 25_000_000, maxFiles: 5)
+```
+
+## 🛠️ Advanced Usage
+
+### Category-Based Logging
+```csharp
+var apiLogger = logger.ForCategory("API");
+var dbLogger = logger.ForCategory("Database");
+
+apiLogger.Info("Request {Method} {Path} completed in {Duration}ms", 
+    "GET", "/users/123", 45);
+dbLogger.Debug("Query executed: {Query}", sql);
+```
+
+### Structured Logging
+```csharp
+logger.Info("Order processed", new Dictionary<string, object>
+{
+    ["OrderId"] = "ORD-001",
+    ["CustomerId"] = 12345,
+    ["Amount"] = 99.99m,
+    ["ProcessingTimeMs"] = 250,
+    ["Items"] = new[] { "Item1", "Item2" }
+});
+```
+
+### Exception Handling
+```csharp
+try
+{
+    await ProcessOrderAsync(order);
+}
+catch (ValidationException ex)
+{
+    logger.Warning("Order validation failed for {OrderId}", order.Id, ex);
+}
+catch (Exception ex)
+{
+    logger.Error("Unexpected error processing {OrderId}", order.Id, ex);
+}
 ```
 
 ### Custom Targets
@@ -129,134 +233,131 @@ var logger = PineLogger.Create()
     .Build();
 ```
 
-## 🛠️ Custom Formatters
+## 📈 Performance Benchmarks
 
-Create your own log format:
+Pine's hot-path optimization provides significant performance benefits:
+
+- **🚀 Zero Allocation** - Disabled log levels cause zero allocations
+- **⚡ Template Caching** - String formatting is optimized
+- **🔄 Async Batching** - File writes are batched for efficiency
+- **💾 Smart Buffering** - Automatic flush strategies
 
 ```csharp
-public class CompactFormatter : ILogFormatter
-{
-    public string Format(LogEntry entry)
-    {
-        return $"[{entry.Level.ToString().ToUpper()}] {entry.Message}";
-    }
-}
-
-// Usage
-.WriteToConsole(new CompactFormatter())
-.WriteToFile("app.log", new CompactFormatter())
+// Performance comparison
+logger.Debug("Processing item {Id}", itemId);        // ✅ ~2ns when disabled
+logger.Debug($"Processing item {itemId}");           // ❌ ~50ns always allocates
+logger.Debug("Processing item " + itemId);           // ❌ ~80ns always allocates
 ```
-
-## 📈 Performance Features
-
-Pine is optimized for high-performance applications:
-
-- **🔄 Async-first Design** - Non-blocking logging operations
-- **📦 Batched File Writes** - Multiple log entries written together
-- **🚀 Minimal Allocations** - Optimized for low GC pressure
-- **⚡ Lock-free Operations** - Concurrent logging without contention
-- **💾 Smart Buffering** - Automatic flush on timer and disposal
 
 ## 🏗️ Architecture
 
 ```
 Pine/
-├── PineLogger.cs           # Main logger class
-├── LogEntry.cs            # Immutable log entry record
-├── ILogTarget.cs          # Target interface
-├── Targets/               # Built-in targets
-│   ├── ConsoleTarget.cs   # Colorized console output
-│   ├── FileTarget.cs      # Batched file writing
-│   └── JsonFileTarget.cs  # JSON structured logging
-├── Formatters/            # Message formatters
-│   ├── ILogFormatter.cs   # Formatter interface
-│   ├── DefaultFormatter.cs # Standard text format
-│   └── JsonFormatter.cs   # JSON format
-└── Configuration/         # Builder pattern setup
-    ├── PineConfiguration.cs
-    └── LoggerBuilder.cs
+├── PineLogger.cs              # Main logger with hot-path optimization
+├── LogEntry.cs               # Immutable log entry record
+├── ILogTarget.cs             # Target interface
+├── Targets/                  # Built-in targets
+│   ├── ConsoleTarget.cs      # Colorized console output
+│   ├── FileTarget.cs         # Basic file writing
+│   ├── RotatingFileTarget.cs # File rotation with compression
+│   ├── JsonFileTarget.cs     # JSON structured logging
+│   └── ConditionalTarget.cs  # Environment-based conditions
+├── Formatters/               # Message formatters
+│   ├── ILogFormatter.cs      # Formatter interface
+│   ├── DefaultFormatter.cs   # Standard text format
+│   └── JsonFormatter.cs      # JSON format
+└── Configuration/            # Builder pattern setup
+    ├── PineConfiguration.cs  # Configuration options
+    ├── LoggerBuilder.cs      # Enhanced fluent builder
+    └── EnvironmentHelper.cs  # Environment detection
 ```
 
-## 🔧 Configuration Options
+## 🔧 Configuration Examples
 
+### Development Setup
 ```csharp
 var logger = PineLogger.Create()
-    .MinimumLevel(LogLevel.Debug)        // Set minimum log level
-    .WriteToConsole()                    // Add console target
-    .WriteToFile("logs/app.log")         // Add file target
-    .WriteToJsonFile("logs/data.json")   // Add JSON target
-    .WithDefaultCategory("MyApp")        // Set default category
-    .AddTarget(new CustomTarget())       // Add custom target
+    .MinimumLevel(LogLevel.Debug)
+    .WriteToConsoleInDevelopment()
+    .WithDefaultCategory("DevApp")
     .Build();
 ```
 
-## 📝 Usage Examples
-
-### Basic Logging
+### Production Setup
 ```csharp
-logger.Trace("Entering method");
-logger.Debug("Processing item {id}", 123);
-logger.Info("User logged in successfully");
-logger.Warning("API rate limit approaching");
-logger.Error("Failed to save data", exception);
-logger.Fatal("System critical failure");
+var logger = PineLogger.Create()
+    .MinimumLevel(LogLevel.Info)
+    .WriteToRotatingFileInProduction("logs/app.log", 
+        maxFileSize: 100_000_000, maxFiles: 30, compress: true)
+    .WriteToRotatingJsonFile("logs/structured.json",
+        maxFileSize: 50_000_000, maxFiles: 15)
+    .WithDefaultCategory("ProdApp")
+    .Build();
 ```
 
-### Structured Data
+### Multi-Environment Setup
 ```csharp
-logger.Info("Order processed", new Dictionary<string, object>
-{
-    ["OrderId"] = "ORD-001",
-    ["CustomerId"] = 12345,
-    ["Amount"] = 99.99m,
-    ["Currency"] = "USD",
-    ["ProcessingTime"] = TimeSpan.FromMilliseconds(245)
-});
+var logger = PineLogger.Create()
+    .MinimumLevel(LogLevel.Debug)
+    .WriteToConsole().OnlyInDevelopment()
+    .WriteToRotatingFile("logs/staging.log").OnlyInStaging()
+    .WriteToRotatingFile("logs/production.log", 
+        maxFileSize: 200_000_000, maxFiles: 50, compress: true).OnlyInProduction()
+    .WriteToRotatingJsonFile("logs/audit.json").OnlyWhen(() => 
+        Environment.GetEnvironmentVariable("ENABLE_AUDIT") == "true")
+    .WithDefaultCategory("MultiEnvApp")
+    .Build();
 ```
 
-### Category-based Organization
-```csharp
-var apiLogger = logger.ForCategory("API");
-var dbLogger = logger.ForCategory("Database");
-var cacheLogger = logger.ForCategory("Cache");
+## 📝 Best Practices
 
-apiLogger.Info("Request received: GET /users");
-dbLogger.Debug("Query executed in 15ms");
-cacheLogger.Warning("Cache miss for key: user_123");
+1. **Use hot-path optimized methods** - Always use template-based logging for performance
+2. **Set appropriate minimum levels** - Use Debug in dev, Info+ in production
+3. **Configure environment-specific targets** - Console for dev, files for production
+4. **Use log rotation** - Prevent disk space issues with automatic rotation
+5. **Include relevant context** - Add properties and categories for better debugging
+6. **Handle exceptions properly** - Always pass exception objects to Error/Fatal
+7. **Dispose properly** - Call Dispose() or use using statements
+8. **Use compression in production** - Save disk space with compressed rotated files
+
+## 🔄 Migration from Other Loggers
+
+### From Serilog
+```csharp
+// Serilog
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.File("logs/app.log")
+    .CreateLogger();
+
+// Pine equivalent
+var logger = PineLogger.Create()
+    .WriteToConsole()
+    .WriteToRotatingFile("logs/app.log")
+    .Build();
 ```
 
-### Exception Handling
+### From NLog
 ```csharp
-try
-{
-    await ProcessOrderAsync(order);
-}
-catch (ValidationException ex)
-{
-    logger.Warning("Order validation failed", ex, new Dictionary<string, object>
-    {
-        ["OrderId"] = order.Id,
-        ["ValidationErrors"] = ex.Errors
-    });
-}
-catch (Exception ex)
-{
-    logger.Error("Unexpected error processing order", ex, new Dictionary<string, object>
-    {
-        ["OrderId"] = order.Id,
-        ["StackTrace"] = ex.StackTrace
-    });
-}
+// NLog
+var logger = LogManager.GetCurrentClassLogger();
+
+// Pine equivalent  
+var logger = PineLogger.Create()
+    .WithDefaultCategory(nameof(MyClass))
+    .WriteToConsoleInDevelopment()
+    .WriteToRotatingFileInProduction("logs/app.log")
+    .Build();
 ```
 
-## 🚀 Best Practices
+## 🌟 What's New in v1.1
 
-1. **Use appropriate log levels** - Don't log everything as Info
-2. **Include context** - Add relevant properties to log entries
-3. **Use categories** - Organize logs by component or feature
-4. **Handle exceptions** - Always log with exception objects
-5. **Dispose properly** - Call Dispose() to flush remaining logs
-6. **Async when possible** - Use async methods for better performance
+- ⚡ **Hot-path optimization** - Zero allocations for disabled log levels
+- 🔄 **Log rotation** - Automatic file rotation with compression
+- 🌐 **Environment awareness** - Different targets for different environments
+- 📋 **Template logging** - High-performance parameterized messages
+- 🎯 **Conditional targets** - Fine-grained control over where logs go
+- 🗜️ **Compression support** - Automatic gzip compression for rotated files
 
 ## 🤝 Contributing
 
@@ -273,7 +374,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🌟 Why Pine?
 
-Pine combines the simplicity you need for quick development with the power required for production applications. Whether you're building a console app, web API, or enterprise system, Pine scales with your needs.
+Pine combines the simplicity you need for quick development with the power required for production applications. With hot-path optimization, automatic log rotation, and environment-aware configuration, Pine scales from development to enterprise.
 
 **Perfect for:**
 - ✅ ASP.NET Core applications
@@ -281,6 +382,7 @@ Pine combines the simplicity you need for quick development with the power requi
 - ✅ Background services
 - ✅ Microservices
 - ✅ Desktop applications
+- ✅ High-performance applications
 
 ---
 
